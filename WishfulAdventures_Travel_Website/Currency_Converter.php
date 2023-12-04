@@ -145,7 +145,7 @@
 			}
 
 			function displayCurrency(data, primary, secondary, amount) {
-				const calculated = amount * data.conversion_rates[secondary];
+				const calculated = (amount * data.conversion_rates[secondary]).toFixed(2);
 				document.getElementById("result").setAttribute("style", "display:block");
 				document.getElementById("txt-primary").innerText = amount + " " + primary + " = ";
 				document.getElementById("txt-secondary").innerText = calculated + " " + secondary;

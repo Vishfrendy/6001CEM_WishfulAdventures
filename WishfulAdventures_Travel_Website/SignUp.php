@@ -1,195 +1,192 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
+<html>
+	<head>
+		<style>
+			body {
+				font-family: Arial, Helvetica, sans-serif;
+				background-color: #f4f4f4;
+				margin: 0;
+				padding: 0;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				height: 100vh;
+				user-select: none;
+				-moz-user-select: none;
+				-webkit-user-select: none;
+				-ms-user-select: none;
+			}
+			
+			form {
+				background-color: #fff;
+				box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+				width: 300px;
+				padding: 20px;
+				border-radius: 5px;
+				text-align: center;
+				position: relative;
+			}
+			.message {
+				text-align: center;
+				color: green;
+				margin-bottom: 10px;
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				background-color: #dff0d8;
+				border-radius: 5px;
+			}
+			
+			h2 {
+				color: #333;
+			}
+			
+			label {
+				display: block;
+				text-align: left;
+				margin: 10px 0 5px;
+				color: #555;
+			}
+			
+			input {
+				width: 100%;
+				padding: 10px;
+				margin-bottom: 10px;
+				box-sizing: border-box;
+			}
+			
+			button {
+				background-color: #ca8dfd;
+				color: white;
+				padding: 10px 20px;
+				border: none;
+				border-radius: 3px;
+				cursor: pointer;
+				width: 100%;
+				margin-top: 10px;
+			}
+			
+			button:hover {
+				opacity: 0.8;
+			}
+			
+			p {
+				color: #888;
+				margin-top: 15px;
+				font-size: 12px;
+			}
+			
+			a {
+				color: dodgerblue;
+				text-decoration: none;
+			}
+			
+			img {
+				max-width: 100%;
+				height: auto;
+				margin-bottom: 10px;
+			}
+		</style>
+	  
+		<script>
+			document.addEventListener('contextmenu', function (e) {
+				e.preventDefault();
+			});
+		</script>
+	</head>
 
-        .container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-            position: relative;
-            z-index: 2; /* Set z-index of the form */
-        }
+	<body>
+		<?php
+		// Initialize an empty message variable
+		$message = "";
 
-        form {
-            display: flex;
-            flex-direction: column;
-        }
+		// Check if the form is submitted
+		if ($_SERVER["REQUEST_METHOD"] == "POST") {
+			// Get form data
+			$username = $_POST["username"];
+			$email = $_POST["email"];
+			$rawSkey = $_POST["skey"]; // Use the original input
+			$skey = password_hash($rawSkey, PASSWORD_BCRYPT); // Hash the security key
+			$password = password_hash($_POST["psw"], PASSWORD_BCRYPT);
 
-        label {
-            margin-top: 10px;
-        }
+			// Database connection parameters
+			$servername = "localhost";
+			$db_username = "root";
+			$password_db = "";
+			$dbname = "wishfuladventures_travel_website";
 
-        input {
-            padding: 8px;
-            margin-top: 5px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
+			// Create connection
+			$conn = new mysqli($servername, $db_username, $password_db, $dbname);
 
-        button {
-            padding: 10px;
-            background-color: #4caf50;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
+			// Check connection
+			if ($conn->connect_error) {
+				die("Connection failed: " . $conn->connect_error);
+			}
 
-        button:hover {
-            background-color: #45a049;
-        }
+			// Check if the username already exists
+			$checkUsernameQuery = "SELECT username FROM users WHERE username = '$username'";
+			$resultUsername = $conn->query($checkUsernameQuery);
 
-        .success-popup {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            padding: 20px;
-            background-color: #4caf50;
-            color: #fff;
-            border-radius: 4px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            z-index: 1; /* Set initial z-index below the form */
-        }
-    </style>
-    <title>Sign Up</title>
-</head>
-<body>
+			// Check if the email already exists
+			$checkEmailQuery = "SELECT email FROM users WHERE email = '$email'";
+			$resultEmail = $conn->query($checkEmailQuery);
 
-<?php
-// Assuming your database connection details
-$host = 'localhost';
-$name = 'root';
-$password = '';
-$database = 'wishfuladventures_travel_website';
+			// Validate the security key
+			if (!password_verify($rawSkey, $skey)) {
+				$message = "Invalid security key format.";
+			} else {
+				// Continue with the rest of your logic
+				if ($resultUsername->num_rows > 0) {
+					$message = "Username is already taken. Please choose another username.";
+				} elseif ($resultEmail->num_rows > 0) {
+					$message = "Email is already taken. Please choose another email address.";
+				} else {
+					// Insert data into the database
+					$sql = "INSERT INTO users (username, email, skey, password) VALUES ('$username', '$email', '$skey', '$password')";
+					if ($conn->query($sql) === TRUE) {
+						$message = "New user created successfully. You can now login.";
+					} else {
+						$message = "Error: " . $sql . "<br>" . $conn->error;
+					}
+				}
+			}
 
-// Create a database connection
-$conn = new mysqli($host, $name, $password, $database);
+			// Close connection
+			$conn->close();
+		}
+		?>
 
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+		<div class="message">
+			<?php
+			// Display the message
+			echo $message;
+			?>
+		</div>
 
-// Initialize the success message variable
-$success_message = '';
+		<form action="Signup.php" method="post">
+			<img src="Logo2.png" alt="Your Image" style="width: 75%;">
+			<h2>Signup</h2>
+			<div class="container">
+				<label for="username"><b>Username</b></label>
+				<input type="text" placeholder="Enter Username" name="username" required autocomplete="off" />
 
-// Process the sign-up form data
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["signup"])) {
-    $signup_email = $_POST["email"];
-    $signup_name = $_POST["name"];
-    $signup_password = $_POST["password"];
-    $signup_confirm_password = $_POST["confirm_password"];
+				<label for="email"><b>Email</b></label>
+				<input type="text" placeholder="Enter Email" name="email" required autocomplete="off" />
+			  
+				<label for="skey"><b>Security Key</b></label>
+				<input type="text" placeholder="Enter A 12-Digit Security Key" name="skey" required autocomplete="off" />
 
-    // Add additional validation as needed
+				<label for="psw"><b>Password</b></label>
+				<input type="password" placeholder="Enter Password" name="psw" required autocomplete="off" />
 
-    // Check if passwords match
-    if ($signup_password !== $signup_confirm_password) {
-        echo "Passwords do not match.";
-        exit();
-    }
+				<label for="psw-repeat"><b>Repeat Password</b></label>
+				<input type="password" placeholder="Enter Password Again" name="psw-repeat" required autocomplete="off" />
 
-    // Hash the password before storing it in the database
-    $hashed_password = password_hash($signup_password, PASSWORD_DEFAULT);
-
-    // Insert user data into the database
-    $sql = "INSERT INTO users (email, name, password) VALUES ('$signup_email', '$signup_name', '$hashed_password')";
-
-    if ($conn->query($sql) === TRUE) {
-        $success_message = "Sign up successful!";
-    } else {
-        echo "Error: " . $sql . "<br>" . $conn->error;
-    }
-}
-
-// Close the database connection
-$conn->close();
-?>
-
-<div class="container">
-    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
-        <h2>Sign Up</h2>
-        <label for="email">Email:</label>
-        <input type="email" name="email" required>
-
-        <label for="name">Name:</label>
-        <input type="text" name="name" required>
-
-        <label for="password">Password:</label>
-        <input type="password" name="password" required>
-
-        <label for="confirm_password">Confirm Password:</label>
-        <input type="password" name="confirm_password" required>
-
-        <button type="submit" name="signup">Sign Up</button>
-    </form>
-</div>
-
-<!-- Success Popup -->
-<div id="successPopup" class="success-popup">
-    <?php if (!empty($success_message)): ?>
-        <p class="success-message"><?php echo $success_message; ?></p>
-        <script>
-            // JavaScript function to show the success popup and bring it above the form
-            function showSuccessPopup() {
-                var popup = document.getElementById('successPopup');
-                popup.style.display = 'block';
-                popup.style.zIndex = '3'; // Set z-index above the form
-            }
-
-            // JavaScript function to close the success popup and redirect to the login page
-            function closeSuccessPopup() {
-                var popup = document.getElementById('successPopup');
-                popup.style.display = 'none';
-                
-                // Redirect to the login page after closing the popup
-                window.location.href = 'SignIn.php'; // Replace 'login.php' with your actual login page
-            }
-
-            // Call the showSuccessPopup function when a successful signup occurs
-            showSuccessPopup();
-        </script>
-    <?php endif; ?>
-    <button onclick="closeSuccessPopup()">Close</button>
-</div>
-
-
-<script>
-    // JavaScript function to show the success popup and bring it above the form
-    function showSuccessPopup() {
-        var popup = document.getElementById('successPopup');
-        popup.style.display = 'block';
-        popup.style.zIndex = '3'; // Set z-index above the form
-    }
-
-    // JavaScript function to close the success popup
-    function closeSuccessPopup() {
-        var popup = document.getElementById('successPopup');
-        popup.style.display = 'none';
-    }
-
-    // Call the showSuccessPopup function when a successful signup occurs
-    <?php if (!empty($success_message)): ?>
-        showSuccessPopup();
-    <?php endif; ?>
-</script>
-
-</body>
+				<button type="submit" class="signupbtn">Sign Up</button>
+			</div>
+			<p>Already have an account? <a href="SignIn.php">Login here</a>.</p>
+		</form>
+	</body>
 </html>
+
