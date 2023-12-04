@@ -104,7 +104,7 @@
 		// Check if the form is submitted
 		if ($_SERVER["REQUEST_METHOD"] == "POST") {
 			// Get form data
-			$username = $_POST["username"];
+			$name = $_POST["name"];
 			$email = $_POST["email"];
 			$rawSkey = $_POST["skey"]; // Use the original input
 			$skey = password_hash($rawSkey, PASSWORD_BCRYPT); // Hash the security key
@@ -125,7 +125,7 @@
 			}
 
 			// Check if the username already exists
-			$checkUsernameQuery = "SELECT username FROM users WHERE username = '$username'";
+			$checkUsernameQuery = "SELECT name FROM users WHERE name = '$name'";
 			$resultUsername = $conn->query($checkUsernameQuery);
 
 			// Check if the email already exists
@@ -143,7 +143,7 @@
 					$message = "Email is already taken. Please choose another email address.";
 				} else {
 					// Insert data into the database
-					$sql = "INSERT INTO users (username, email, skey, password) VALUES ('$username', '$email', '$skey', '$password')";
+					$sql = "INSERT INTO users (name, email, skey, password) VALUES ('$name', '$email', '$skey', '$password')";
 					if ($conn->query($sql) === TRUE) {
 						$message = "New user created successfully. You can now login.";
 					} else {
@@ -168,8 +168,8 @@
 			<img src="Logo2.png" alt="Your Image" style="width: 75%;">
 			<h2>Signup</h2>
 			<div class="container">
-				<label for="username"><b>Username</b></label>
-				<input type="text" placeholder="Enter Username" name="username" required autocomplete="off" />
+				<label for="name"><b>Username</b></label>
+				<input type="text" placeholder="Enter Username" name="name" required autocomplete="off" />
 
 				<label for="email"><b>Email</b></label>
 				<input type="text" placeholder="Enter Email" name="email" required autocomplete="off" />

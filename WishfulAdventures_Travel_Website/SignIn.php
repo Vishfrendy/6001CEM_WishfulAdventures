@@ -98,107 +98,111 @@
 	</head>
 
 	<body>
-		<?php
-		// Initialize an empty message variable
-		$message = "";
+	  <?php
+	  // Initialize an empty message variable
+	  $message = "";
 
-		// Maximum number of allowed login attempts
-		$maxAttempts = 3;
+	  // Maximum number of allowed login attempts
+	  $maxAttempts = 3;
 
-		// Lockout 5 seconds duration in seconds 
-		$lockoutDuration = 60;
+	  // Lockout 5 seconds duration in seconds 
+	  $lockoutDuration = 60;
 
-		// Check if the form is submitted
-		if ($_SERVER["REQUEST_METHOD"] == "POST") {
-			// Get form data
-			$username = $_POST["username"];
-			$password = $_POST["psw"];
+	  // Check if the form is submitted
+	  if ($_SERVER["REQUEST_METHOD"] == "POST") {
+		// Get form data
+		$name = $_POST["name"];
+		$password = $_POST["psw"];
+		$skey = $_POST["skey"]; // Add this line to retrieve the security key
 
-			// Database connection parameters
-			$servername = "localhost";
-			$db_username = "root";
-			$password_db = "";
-			$dbname = "wishfuladventures_travel_website";
+		// Database connection parameters
+		$servername = "localhost";
+		$db_username = "root";
+		$password_db = "";
+		$dbname = "wishfuladventures_travel_website";
 
-			// Create connection
-			$conn = new mysqli($servername, $db_username, $password_db, $dbname);
+		// Create connection
+		$conn = new mysqli($servername, $db_username, $password_db, $dbname);
 
-			// Check connection
-			if ($conn->connect_error) {
-				die("Connection failed: " . $conn->connect_error);
-			}
-
-			// Retrieve user data based on the provided username
-			$sql = "SELECT * FROM users WHERE username = '$username'";
-			$result = $conn->query($sql);
-
-			if ($result->num_rows > 0) {
-				$row = $result->fetch_assoc();
-
-				// Check if the account is locked
-				$lockoutQuery = "SELECT timestamp FROM login_attempts WHERE username = '$username' ORDER BY timestamp DESC LIMIT 1";
-				$lockoutResult = $conn->query($lockoutQuery);
-
-				if ($lockoutResult->num_rows > 0) {
-					$lastAttemptTime = strtotime($lockoutResult->fetch_assoc()["timestamp"]);
-					$elapsedTime = time() - $lastAttemptTime;
-
-					if ($elapsedTime < $lockoutDuration) {
-						$message = "Account is temporarily locked due to too many failed login attempts. Please try again later.";
-						// You may also want to log this attempt for security monitoring purposes
-					} else {
-						// If the lockout duration has passed, reset the login attempts
-						$resetAttemptsQuery = "DELETE FROM login_attempts WHERE username = '$username'";
-						$conn->query($resetAttemptsQuery);
-					}
-				}
-
-				// Verify the entered password against the stored hash
-				if (password_verify($password, $row["password"])) {
-					// Reset login attempts upon successful login
-					$resetAttemptsQuery = "DELETE FROM login_attempts WHERE username = '$username'";
-					$conn->query($resetAttemptsQuery);
-
-					$message = "Login successful. Welcome, $username!";
-					// Redirect to index.php
-					header("Location: index.php");
-					exit();
-				} else {
-					$message = "Invalid password. Please try again.";
-
-					// Log failed login attempts
-					$logAttemptQuery = "INSERT INTO login_attempts (username, timestamp) VALUES ('$username', NOW())";
-					$conn->query($logAttemptQuery);
-				}
-			} else {
-				$message = "User not found. Please check your username.";
-			}
-
-			// Close connection after login attempt
-			$conn->close();
+		// Check connection
+		if ($conn->connect_error) {
+		  die("Connection failed: " . $conn->connect_error);
 		}
+
+		// Retrieve user data based on the provided username
+		$sql = "SELECT * FROM users WHERE name = '$name'";
+		$result = $conn->query($sql);
+
+		if ($result->num_rows > 0) {
+		  $row = $result->fetch_assoc();
+
+		  // Check if the account is locked
+		  $lockoutQuery = "SELECT timestamp FROM login_attempts WHERE name = '$name' ORDER BY timestamp DESC LIMIT 1";
+		  $lockoutResult = $conn->query($lockoutQuery);
+
+		  if ($lockoutResult->num_rows > 0) {
+			$lastAttemptTime = strtotime($lockoutResult->fetch_assoc()["timestamp"]);
+			$elapsedTime = time() - $lastAttemptTime;
+
+			if ($elapsedTime < $lockoutDuration) {
+			  $message = "Account is temporarily locked due to too many failed login attempts. Please try again later.";
+			  // You may also want to log this attempt for security monitoring purposes
+			} else {
+			  // If the lockout duration has passed, reset the login attempts
+			  $resetAttemptsQuery = "DELETE FROM login_attempts WHERE name = '$name'";
+			  $conn->query($resetAttemptsQuery);
+			}
+		  }
+
+		  // Verify the entered password and security key against the stored hash
+		  if (password_verify($password, $row["password"]) && password_verify($skey, $row["skey"])) {
+			// Reset login attempts upon successful login
+			$resetAttemptsQuery = "DELETE FROM login_attempts WHERE name = '$name'";
+			$conn->query($resetAttemptsQuery);
+
+			$message = "Login successful. Welcome, $name!";
+			// Redirect to Travel_Website.php
+			header("Location: Travel_Website.php");
+			exit();
+		  } else {
+			$message = "Invalid password or security key. Please try again.";
+
+			// Log failed login attempts
+			$logAttemptQuery = "INSERT INTO login_attempts (name, timestamp) VALUES ('$name', NOW())";
+			$conn->query($logAttemptQuery);
+		  }
+		} else {
+		  $message = "User not found. Please check your username.";
+		}
+
+		// Close connection after login attempt
+		$conn->close();
+	  }
+	  ?>
+
+	  <div class="message">
+		<?php
+		// Display the message
+		echo $message;
 		?>
+	  </div>
 
-		<div class="message">
-			<?php
-			// Display the message
-			echo $message;
-			?>
+	  <form action="SignIn.php" method="post">
+		<img src="Logo2.png" alt="Your Image" style="width: 75%;">
+		<h2>Login</h2>
+		<div class="container">
+		  <label for="name"><b>Username</b></label>
+		  <input type="text" placeholder="Enter Username" name="name" required autocomplete="off" />
+
+		  <label for="psw"><b>Password</b></label>
+		  <input type="password" placeholder="Enter Password" name="psw" required autocomplete="off" />
+
+		  <label for="skey"><b>Security Key</b></label>
+		  <input type="text" placeholder="Enter Security Key" name="skey" required autocomplete="off" />
+
+		  <button type="submit" class="loginbtn">Login</button>
 		</div>
-
-		<form action="Login.php" method="post">
-			<img src="Logo2.png" alt="Your Image" style="width: 75%;">
-			<h2>Login</h2>
-			<div class="container">
-				<label for="username"><b>Username</b></label>
-				<input type="text" placeholder="Enter Username" name="username" required  autocomplete="off" />
-
-				<label for="psw"><b>Password</b></label>
-				<input type="password" placeholder="Enter Password" name="psw" required  autocomplete="off" />
-
-				<button type="submit" class="loginbtn">Login</button>
-			</div>
-			<p>Don't have an account? <a href="Signup.php">Sign up here</a>.</p>
-		</form>
+		<p>Don't have an account? <a href="Signup.php">Sign up here</a>.</p>
+	  </form>
 	</body>
 </html>
